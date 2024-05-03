@@ -1,11 +1,9 @@
 # Training set for study of secondary structure of globular proteins by
 # Ning Qing and Terry Sejnowski.
-
 # Copyright (C) 1988 by Terrence J. Sejnowski.  Permission is hereby given to
 # use the included data for non-commercial research purposes.  Contact The
 # Johns Hopkins University, Cognitive Science Center, Baltimore MD, USA for
 # information on commercial use.
-
 <>
 G _
 V _
@@ -18313,4 +18311,3 @@ K h
 Y h
 N _
 <end>
-
