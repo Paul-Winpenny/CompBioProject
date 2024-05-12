@@ -6,6 +6,11 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+tf.keras.utils.set_random_seed(32)
+tf.config.experimental.enable_op_determinism()
+
 def parse_data(file_path):
     sequences = []
     labels = []
@@ -64,7 +69,6 @@ eseq = encode_seqeuences(seq)
 #print(labels)
 elab = encode_labels(labels)
 
-
 #Confirm that the encoding is correct
 foundVal = ""
 count = 0
@@ -82,13 +86,14 @@ while foundVal != [0]*20 + [1]: # when it finds foundVal = [0]*21, it will stop
     foundVal = eseq[count]
     count += 1   
 print("End found at:",count)
-
 def build_model(input_shape):
+    learning_rate = 0.001
+    optim = Adam(learning_rate=learning_rate)
     model = Sequential([
-        Dense(40, activation='tanh', input_shape=(input_shape,)),  # Hidden layer with 40 units
+        Dense(40, activation='sigmoid', input_shape=(input_shape,)),  # Hidden layer with 40 units
         Dense(3, activation='softmax')  # Output layer for the three types of secondary structures
     ])
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=optim, loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 def create_sliding_windows(encoded_seqs, window_size=13):
     # Padding to handle boundaries
@@ -110,6 +115,66 @@ y_train = np.array(y_train)
 y_test = np.array(y_test)
 
 # Train the model
-history = model.fit(X_train, y_train, epochs=50, validation_data=(X_test, y_test), batch_size=32)
+history = model.fit(X_train, y_train, epochs=100, validation_data=(X_test, y_test), batch_size=32)
 test_loss, test_accuracy = model.evaluate(X_test, y_test)
 print("Test accuracy:", test_accuracy)
+# Plot training & validation accuracy values
+plt.figure(figsize=(14, 6))
+plt.suptitle('80/20 Train/Test Split. Test Accuracy: ' + str(round(test_accuracy*100,2)) + '%', fontsize=16, y=1.05, x=0.5, ha='center')
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('Model Accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.yticks([i / 20 for i in range(21)])  # 0, 0.1, 0.2, ..., 1.0
+
+plt.ylim(0.4, 1)  # Adjust the y-axis limit to provide space at the top
+
+# Plot training & validation loss values
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model Loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.yticks([i / 10 for i in range(11)])  # 0, 0.1, 0.2, ..., 1.0
+
+plt.ylim(0, max(max(history.history['loss']), max(history.history['val_loss'])))  # Adjust y-axis limit dynamically
+
+# Put test accuracy as a label on the plot
+# Adjust layout to remove white space
+plt.tight_layout()
+plt.show()
+
+
+def calculate_q3_score(y_true, y_pred):
+    total = len(y_true)
+    correct = sum(np.argmax(y_true[i]) == np.argmax(y_pred[i]) for i in range(total))
+    return correct / total
+
+#Give me a confusion matrix
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+y_pred = model.predict(X_test)
+y_pred_labels = np.argmax(y_pred, axis=1)
+y_test_labels = np.argmax(y_test, axis=1)
+
+
+q3_score = calculate_q3_score(y_test, y_pred)
+print("Q3 Score:", q3_score)
+# Compute the normalized confusion matrix
+cm = confusion_matrix(y_test_labels, y_pred_labels, normalize='true')
+
+# Plotting the normalized confusion matrix
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm, annot=True, fmt=".2f", cmap='Blues', xticklabels=['E', 'H', '_'], yticklabels=['E', 'H', '_'])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Normalized Confusion Matrix')
+plt.show()
+
