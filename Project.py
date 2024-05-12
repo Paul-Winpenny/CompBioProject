@@ -69,26 +69,10 @@ eseq = encode_seqeuences(seq)
 #print(labels)
 elab = encode_labels(labels)
 
-#Confirm that the encoding is correct
-foundVal = ""
-count = 0
-while foundVal != "end":
-    foundVal = seq[count]
-    fV = eseq[count]
-    #print("Character",foundVal,"is encoded as",fV)
-    
-    count += 1
-
-print("End found at:",count)
-count = 0
-foundVal = []
-while foundVal != [0]*20 + [1]: # when it finds foundVal = [0]*21, it will stop
-    foundVal = eseq[count]
-    count += 1   
-print("End found at:",count)
 def build_model(input_shape):
     learning_rate = 0.001
-    optim = Adam(learning_rate=learning_rate)
+    #optim = Adam(learning_rate=learning_rate)
+    optim = 'adam'
     model = Sequential([
         Dense(40, activation='sigmoid', input_shape=(input_shape,)),  # Hidden layer with 40 units
         Dense(3, activation='softmax')  # Output layer for the three types of secondary structures
@@ -178,3 +162,62 @@ plt.ylabel('Actual')
 plt.title('Normalized Confusion Matrix')
 plt.show()
 
+def save_metrics(model_name, accuracy, confusion_matrix, labels):
+    # Save the accuracy to a CSV file
+    import pandas as pd
+    accuracy_data = pd.DataFrame({'Model': [model_name], 'Accuracy': [accuracy]})
+    accuracy_data.to_csv(f"{model_name}_accuracy.csv", index=False)
+
+    # Plot and save the confusion matrix
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(confusion_matrix, annot=True, fmt=".2f", cmap='Blues', xticklabels=labels, yticklabels=labels)
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title(f'Normalized Confusion Matrix - {model_name}')
+    plt.savefig(f"{model_name}_confusion_matrix.png")
+    plt.close()
+
+class_labels = ['E', 'H', '_']
+
+# Evaluate the first model
+test_accuracy_first = model.evaluate(X_test, y_test)[1]
+y_pred_first = model.predict(X_test)
+cm_first = confusion_matrix(np.argmax(y_test, axis=1), np.argmax(y_pred_first, axis=1), normalize='true')
+save_metrics("First_Network", test_accuracy_first, cm_first, class_labels)
+#Do network with 17 units for the sliding window
+
+eseq = encode_seqeuences(seq)
+elab = encode_labels(labels)
+
+windowed_input = create_sliding_windows(np.array(eseq), window_size=17)
+X_train, X_test, y_train, y_test = train_test_split(windowed_input, elab, test_size=0.2, random_state=42)
+
+create_sliding_windows(eseq, window_size=17)
+model = build_model(X_train.shape[1])
+y_train = np.array(y_train)
+y_test = np.array(y_test)
+# Train the model
+history = model.fit(X_train, y_train, epochs=100, validation_data=(X_test, y_test), batch_size=32)
+test_loss, test_accuracy = model.evaluate(X_test, y_test)
+print("Test accuracy:", test_accuracy)
+
+# Plot training and validation accuracy values
+plt.figure(figsize=(14, 6))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('Model Accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model Loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+
+plt.tight_layout()
+plt.show()

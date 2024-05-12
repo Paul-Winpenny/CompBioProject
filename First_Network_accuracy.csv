@@ -1,2 +1,2 @@
-Model,Accuracy
-First_Network,0.6324175596237183
+Model,Accuracy,ePercentage,hPercentage,blankPercentage
+First_Network,0.6299450397491455,0.3547486033519553,0.4505844845908608,0.8144225920322743
