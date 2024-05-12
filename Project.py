@@ -64,7 +64,6 @@ eseq = encode_seqeuences(seq)
 #print(labels)
 elab = encode_labels(labels)
 
-
 #Confirm that the encoding is correct
 foundVal = ""
 count = 0
@@ -84,11 +83,13 @@ while foundVal != [0]*20 + [1]: # when it finds foundVal = [0]*21, it will stop
 print("End found at:",count)
 
 def build_model(input_shape):
+    learning_rate = 0.0005
+    optim = Adam(learning_rate=learning_rate)
     model = Sequential([
-        Dense(40, activation='tanh', input_shape=(input_shape,)),  # Hidden layer with 40 units
+        Dense(40, activation='sigmoid', input_shape=(input_shape,)),  # Hidden layer with 40 units
         Dense(3, activation='softmax')  # Output layer for the three types of secondary structures
     ])
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=optim, loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 def create_sliding_windows(encoded_seqs, window_size=13):
     # Padding to handle boundaries
@@ -110,6 +111,37 @@ y_train = np.array(y_train)
 y_test = np.array(y_test)
 
 # Train the model
-history = model.fit(X_train, y_train, epochs=50, validation_data=(X_test, y_test), batch_size=32)
+history = model.fit(X_train, y_train, epochs=100, validation_data=(X_test, y_test), batch_size=32)
 test_loss, test_accuracy = model.evaluate(X_test, y_test)
 print("Test accuracy:", test_accuracy)
+# Plot training & validation accuracy values
+plt.figure(figsize=(14, 6))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('Model Accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.yticks([i / 20 for i in range(21)])  # 0, 0.1, 0.2, ..., 1.0
+
+plt.ylim(0, 1)  # Adjust the y-axis limit to provide space at the top
+
+# Plot training & validation loss values
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model Loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.yticks([i / 20 for i in range(21)])  # 0, 0.1, 0.2, ..., 1.0
+
+plt.ylim(0, max(max(history.history['loss']), max(history.history['val_loss'])))  # Adjust y-axis limit dynamically
+
+# Put test accuracy as a label on the plot
+plt.figtext(0.02, 0.02, "Test accuracy: " + str(test_accuracy), fontsize=12, ha='left')  # Adjust the position of text
+
+# Adjust layout to remove white space
+plt.tight_layout()
+plt.show()
