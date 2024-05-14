@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV, train_test_split
 
 # Function to parse data from a file
 def parse_data(file_path):
@@ -69,29 +68,18 @@ y_train = elab_train
 X_test = windowed_input_test
 y_test = elab_test
 
-# Hyperparameter tuning using GridSearchCV
-print("Defining and tuning the SVM model...")
-param_grid = {
-    'C': [0.1, 1, 10],
-    'gamma': ['scale', 'auto'],
-    'kernel': ['linear', 'rbf']
-}
-
-grid_search = GridSearchCV(SVC(probability=True), param_grid, cv=5, verbose=1, n_jobs=-1)
+# Define and fit the SVM model with manually specified parameters
+print("Defining and fitting the SVM model...")
+svm_model = SVC(C=1, gamma='scale', kernel='rbf', probability=True)
 fit_start_time = time.time()
-grid_search.fit(X_train, y_train)
+svm_model.fit(X_train, y_train)
 fit_end_time = time.time()
-print(f"Grid search complete. Time taken: {fit_end_time - fit_start_time} seconds.")
+print(f"SVM model fit complete. Time taken: {fit_end_time - fit_start_time} seconds.")
 
-# Best parameters and estimator
-best_params = grid_search.best_params_
-best_svm_model = grid_search.best_estimator_
-print(f"Best parameters found: {best_params}")
-
-# Evaluate the best model
-print("Evaluating the best SVM model...")
-y_train_pred = best_svm_model.predict(X_train)
-y_test_pred = best_svm_model.predict(X_test)
+# Evaluate the SVM model
+print("Evaluating the SVM model...")
+y_train_pred = svm_model.predict(X_train)
+y_test_pred = svm_model.predict(X_test)
 train_accuracy = accuracy_score(y_train, y_train_pred)
 test_accuracy = accuracy_score(y_test, y_test_pred)
 print(f"Train accuracy: {train_accuracy}")

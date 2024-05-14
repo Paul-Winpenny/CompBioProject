@@ -44,8 +44,8 @@ def encode_labels(labels):
     return encoded_labels
 
 # Load and process training and test data
-seq_train, labels_train = parse_data("protein-secondary-structure.train.txt")
-seq_test, labels_test = parse_data("protein-secondary-structure.test.txt")
+seq_train, labels_train = parse_data("E:\BioProjCopy\CompBioProject\protein-secondary-structure.train.txt")
+seq_test, labels_test = parse_data("E:\BioProjCopy\CompBioProject\protein-secondary-structure.test.txt")
 
 
 eseq_train = encode_sequences(seq_train)
@@ -112,28 +112,7 @@ test_loss, test_accuracy = second_network.evaluate(intermediate_output_test, y_t
 print("Test accuracy:", test_accuracy)
 
 
-plt.figure(figsize=(7, 12))  # Adjusted figure size for vertical layout
 
-# Subplot for the accuracy of second model
-plt.subplot(2, 1, 1)
-plt.plot(history2.history['accuracy'], label='Train Accuracy')
-plt.plot(history2.history['val_accuracy'], label='Test Accuracy')
-plt.title('Cascaded Network Accuracy')
-plt.ylabel('Accuracy')
-plt.xlabel('Epoch')
-plt.legend(loc='upper left')
-
-# Subplot for the loss of second model
-plt.subplot(2, 1, 2)
-plt.plot(history2.history['loss'], label='Train Loss')
-plt.plot(history2.history['val_loss'], label='Test Loss')
-plt.title('Cascaded Network Loss')
-plt.ylabel('Loss')
-plt.xlabel('Epoch')
-plt.legend(loc='upper left')
-
-plt.tight_layout()
-plt.show()
 
 y_pred = second_network.predict(intermediate_output_test)
 y_pred_classes = np.argmax(y_pred, axis=1)
@@ -147,14 +126,6 @@ cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
 labels = ['e', 'h', '_']
 
-# Plotting the normalized confusion matrix
-plt.figure(figsize=(8, 6))
-sns.heatmap(cm_normalized, annot=True, fmt=".2f", cmap='Reds', cbar=False, xticklabels=labels, yticklabels=labels)
-plt.title('Normalized Confusion Matrix')
-plt.ylabel('True Label')
-plt.xlabel('Predicted Label')
-plt.show()
-
 
 
 # Function to create sliding windows
@@ -166,13 +137,13 @@ def create_sliding_windows(encoded_seqs, window_size=13):
 
 # Assuming the presence of functions parse_data, encode_sequences, and encode_labels
 # Load and process training data
-seq_train, labels_train = parse_data("protein-secondary-structure.train.txt")
+seq_train, labels_train = parse_data("E:\BioProjCopy\CompBioProject\protein-secondary-structure.train.txt")
 eseq_train = encode_sequences(seq_train)
 elab_train = encode_labels(labels_train)
 windowed_input_train = create_sliding_windows(np.array(eseq_train), window_size=13)
 
 # Load and process testing data
-seq_test, labels_test = parse_data("protein-secondary-structure.test.txt")
+seq_test, labels_test = parse_data("E:\BioProjCopy\CompBioProject\protein-secondary-structure.test.txt")
 eseq_test = encode_sequences(seq_test)
 elab_test = encode_labels(labels_test)
 windowed_input_test = create_sliding_windows(np.array(eseq_test), window_size=13)
@@ -220,37 +191,16 @@ def build_cascade_model(first_model, second_model):
     return history1, history2
 
 # Build and train both models
-first_model = build_improved_model(windowed_input_train.shape[1:])
-second_model = build_second_model(first_model.output_shape[1])
-history1, history2 = build_cascade_model(first_model, second_model)
+better_first_model = build_improved_model(windowed_input_train.shape[1:])
+better_second_model = build_second_model(better_first_model.output_shape[1])
+better_history1, better_history2 = build_cascade_model(better_first_model, better_second_model)
 
 # Evaluate the cascade architecture
-intermediate_output_test = first_model.predict(windowed_input_test)
-test_loss, test_accuracy = second_model.evaluate(intermediate_output_test, elab_test)
+intermediate_output_test = better_first_model.predict(windowed_input_test)
+test_loss, test_accuracy = better_second_model.evaluate(intermediate_output_test, elab_test)
 print("Test accuracy:", test_accuracy)
 # Set up a figure to host two subplots vertically
-plt.figure(figsize=(7, 12))  # Adjusted figure size for vertical layout
 
-# Subplot for the accuracy
-plt.subplot(2, 1, 1)  # 2 rows, 1 column, 1st subplot (top)
-plt.plot(history2.history['accuracy'], label='Train Accuracy')  # Use history2 for the second model
-plt.plot(history2.history['val_accuracy'], label='Validation Accuracy')  # Use history2 for the second model
-plt.title('Improved Cascaded Network Accuracy')  # Update the title
-plt.ylabel('Accuracy')
-plt.xlabel('Epoch')
-plt.legend(loc='upper left')
-
-# Subplot for the loss
-plt.subplot(2, 1, 2)  # 2 rows, 1 column, 2nd subplot (bottom)
-plt.plot(history2.history['loss'], label='Train Loss')  # Use history2 for the second model
-plt.plot(history2.history['val_loss'], label='Validation Loss')  # Use history2 for the second model
-plt.title('Improved Cascaded Network Loss')  # Update the title
-plt.ylabel('Loss')
-plt.xlabel('Epoch')
-plt.legend(loc='upper left')
-
-plt.tight_layout()  # Adjust layout to prevent overlap
-plt.show()
 # Predict using the second network (Improved Cascaded Network)
 y_pred = second_network.predict(intermediate_output_test)  # Use intermediate_output_test from the cascade architecture
 y_pred_classes = np.argmax(y_pred, axis=1)
@@ -264,13 +214,7 @@ cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
 labels = ['e', 'h', '_']
 
-# Plotting the normalized confusion matrix
-plt.figure(figsize=(8, 6))
-sns.heatmap(cm_normalized, annot=True, fmt=".2f", cmap='Reds', cbar=False, xticklabels=labels, yticklabels=labels)
-plt.title('Normalized Confusion Matrix for Improved Cascaded Network')
-plt.ylabel('True Label')
-plt.xlabel('Predicted Label')
-plt.show()
+
 #Test on unseen data sheets
 #RS126Data, C : loops
 #H : Helix
@@ -327,7 +271,8 @@ def create_sliding_windows(encoded_seqs, window_size=13):
     windows = np.array([padded_seqs[i:i + window_size].flatten() for i in range(len(encoded_seqs))])
     return windows
 
-seq, labels = parse_unseen_data("RS126.data.txt")
+
+seq, labels = parse_unseen_data("E:\BioProjCopy\CompBioProject\RS126.data.txt")
 labels = convert_unseen_labels(labels)
 eseq = encode_sequences(seq)
 elab = encode_labels(labels)
@@ -337,16 +282,32 @@ window_size = 13
 windowed_input_test = create_sliding_windows(eseq, window_size)
 
 # Assuming `first_network` and `second_network` are your original cascade models
-# Assuming `first_model` and `second_model` are your improved cascade models
+# Assuming `better_first_model` and `better_second_model` are your improved cascade models
 
 # Test the original cascade model
 intermediate_output_test_orig = first_network.predict(windowed_input_test)
 test_loss_orig, test_accuracy_orig = second_network.evaluate(intermediate_output_test_orig, elab)
 print("Original Cascade Model Test accuracy on unseen data:", test_accuracy_orig)
 
+
+def create_sliding_windows(encoded_seqs, window_size=13):
+    padding = np.zeros((window_size // 2, 21))  # Zero vectors for padding
+    padded_seqs = np.vstack([padding, encoded_seqs, padding])
+    windows = np.array([padded_seqs[i:i + window_size] for i in range(len(encoded_seqs))])
+    return windows
+
+seq, labels = parse_unseen_data("E:\BioProjCopy\CompBioProject\RS126.data.txt")
+labels = convert_unseen_labels(labels)
+eseq = encode_sequences(seq)
+elab = encode_labels(labels)
+
+# Create sliding windows
+window_size = 13
+windowed_input_test = create_sliding_windows(eseq, window_size)
+
 # Test the improved cascade model
-intermediate_output_test_improved = first_model.predict(windowed_input_test)
-test_loss_improved, test_accuracy_improved = second_model.evaluate(intermediate_output_test_improved, elab)
+intermediate_output_test_improved = better_first_model.predict(windowed_input_test)
+test_loss_improved, test_accuracy_improved = better_second_model.evaluate(intermediate_output_test_improved, elab)
 print("Improved Cascade Model Test accuracy on unseen data:", test_accuracy_improved)
 
 # Function to plot confusion matrix
@@ -368,6 +329,20 @@ y_true_classes = np.argmax(elab, axis=1)
 plot_confusion_matrix(y_true_classes, y_pred_classes_orig, 'Original Cascade Model Normalized Confusion Matrix')
 
 # Predict and plot confusion matrix for improved cascade model
-y_pred_improved = second_model.predict(intermediate_output_test_improved)
+y_pred_improved = better_second_model.predict(intermediate_output_test_improved)
 y_pred_classes_improved = np.argmax(y_pred_improved, axis=1)
 plot_confusion_matrix(y_true_classes, y_pred_classes_improved, 'Improved Cascade Model Normalized Confusion Matrix')
+
+# Plotting bar chart of test accuracies
+models = ['Original Cascade Model', 'Improved Cascade Model']
+accuracies = [test_accuracy_orig, test_accuracy_improved]
+
+plt.figure(figsize=(10, 6))
+plt.bar(models, accuracies, color=['blue', 'green'])
+plt.xlabel('Models')
+plt.ylabel('Accuracy')
+plt.title('Test Accuracy of Original vs Improved Cascade Models')
+for i, v in enumerate(accuracies):
+    plt.text(i, v + 0.01, f"{v:.2%}", ha='center', va='bottom', fontsize=12)
+plt.ylim(0, 1)
+plt.show()
