@@ -5,6 +5,48 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.svm import SVC
 
+def parse_unseen_data(file_path):
+    '''
+    There is 150 instance and every instance contain 2 line .
+    1st line = primary sequence (amino acid)
+    2nd line = secondary sequence (C,H,E)
+    #FNKEQQNAFYEILHLPNLNEEQRNGFIQSLKDDPSQSANLLAE
+    CCCCHHHHHHHHHCCCCCCCHHHHHHHHHHHHCCCCCCCCCCC'''
+    sequences = []
+    labels = []
+ 
+    with open(file_path, "r") as file:
+        # Read the file line by line
+        lines = file.readlines()
+        #print(len(lines)    )
+        # Iterate over the lines, 2 at a time
+        primary = True
+        for line in lines:
+            cleaned_line = line.strip()
+            if primary:
+                for charac in cleaned_line:
+                    sequences.append(charac)
+                #sequences.append("end")
+                primary = False
+            else:
+                for charac in cleaned_line:
+                    labels.append(charac)
+                #labels.append("end")
+                primary = True
+    
+
+    return sequences, labels
+
+def convert_unseen_labels(labels):
+    '''
+    Convert unseen labels to numerical format.
+    C : _
+    H : h
+    E : e
+    '''
+    label_mapping = {'C': '_', 'H': 'h', 'E': 'e', 'end': 'end'}
+    converted_labels = [label_mapping[label] for label in labels]
+    return converted_labels
 # Function to parse data from a file
 def parse_data(file_path):
     sequences = []
@@ -46,10 +88,18 @@ start_time = time.time()
 seq_train, labels_train = parse_data("E:\BioProjCopy\CompBioProject\protein-secondary-structure.train.txt")
 seq_test, labels_test = parse_data("E:\BioProjCopy\CompBioProject\protein-secondary-structure.test.txt")
 
+#Test on unseen data
+seq_test2, labels_test2 = parse_unseen_data("E:\BioProjCopy\CompBioProject\RS126.data.txt")
+
 eseq_train = encode_sequences(seq_train)
 elab_train = encode_labels(labels_train)
 eseq_test = encode_sequences(seq_test)
 elab_test = encode_labels(labels_test)
+
+labels_test2 = convert_unseen_labels(labels_test2)
+eseq_test2 = encode_sequences(seq_test2)
+elab_test2 = encode_labels(labels_test2)
+
 
 # Function to create sliding windows
 def create_sliding_windows(encoded_seqs, window_size=13):
@@ -60,13 +110,16 @@ def create_sliding_windows(encoded_seqs, window_size=13):
 
 print("Preparing windowed input for model...")
 # Prepare windowed input for model
-windowed_input_train = create_sliding_windows(np.array(eseq_train))
-windowed_input_test = create_sliding_windows(np.array(eseq_test))
+windowed_input_train = create_sliding_windows(np.array(eseq_train),window_size=13)
+windowed_input_test = create_sliding_windows(np.array(eseq_test),window_size=13)
+windowed_input_test2 = create_sliding_windows(np.array(eseq_test2),window_size=13)
 
 X_train = windowed_input_train
 y_train = elab_train
 X_test = windowed_input_test
 y_test = elab_test
+X_test2 = windowed_input_test2
+y_test2 = elab_test2
 
 # Define and fit the SVM model with manually specified parameters
 print("Defining and fitting the SVM model...")
@@ -80,10 +133,15 @@ print(f"SVM model fit complete. Time taken: {fit_end_time - fit_start_time} seco
 print("Evaluating the SVM model...")
 y_train_pred = svm_model.predict(X_train)
 y_test_pred = svm_model.predict(X_test)
+y_test_pred2 = svm_model.predict(X_test2)
+
 train_accuracy = accuracy_score(y_train, y_train_pred)
 test_accuracy = accuracy_score(y_test, y_test_pred)
-print(f"Train accuracy: {train_accuracy}")
-print(f"Test accuracy: {test_accuracy}")
+test_accuracy2 = accuracy_score(y_test2, y_test_pred2)
+
+#print(f"Train accuracy: {train_accuracy}")
+print(f"Test data accuracy: {test_accuracy}")
+print(f"Unseen data accuracy: {test_accuracy2}")
 
 # Normalize confusion matrix
 conf_matrix = confusion_matrix(y_test, y_test_pred)
@@ -94,18 +152,25 @@ print("Plotting confusion matrix...")
 sns.heatmap(conf_matrix_normalized, annot=True, fmt='.2f', cmap='Blues')
 plt.xlabel('Predicted')
 plt.ylabel('True')
-plt.title('Normalized Confusion Matrix')
+plt.title('Normalized Confusion Matrix 1988')
 plt.show()
+
+conf_matrix2 = confusion_matrix(y_test2, y_test_pred2)
+conf_matrix_normalized2 = conf_matrix2.astype('float') / conf_matrix2.sum(axis=1)[:, np.newaxis]
+sns.heatmap(conf_matrix_normalized2, annot=True, fmt='.2f', cmap='Blues')
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.title('Normalized Confusion Matrix RS126')
 
 # Plot accuracies
 print("Plotting accuracies...")
-accuracies = [train_accuracy, test_accuracy]
-labels = ['Train', 'Test']
+accuracies = [test_accuracy,test_accuracy2]
+labels = ['1988 Dataset', 'RS126 Dataset']
 colors = ['#1f77b4', '#ff7f0e']
 
 plt.figure(figsize=(10, 6))
 bars = plt.bar(labels, accuracies, color=colors)
-plt.title('SVM Model Accuracy On Original Data')
+plt.title('SVM Model Accuracy')
 plt.ylabel('Accuracy')
 plt.ylim(0, 1)
 
